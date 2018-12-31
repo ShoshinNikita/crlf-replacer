@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -13,22 +14,35 @@ import (
 var shouldReplaceCRLF bool
 
 func main() {
-	path := "."
+	// Parse flags
+	var path, files, extensions, folders string
 
-	excludedFiles := []string{}
-	excludedFolders := []string{
-		"node_modules",
-		".git",
-	}
-	excludedExtensions := []string{
-		".png",
-		".jpg",
-		".eot",
-		".ttf",
-		".woff",
-		".woff2",
-	}
+	flag.StringVar(&path, "path", ".", "")
+	flag.BoolVar(&shouldReplaceCRLF, "replace", false, "defines should program replace CRLF")
+	flag.StringVar(&files, "ex-files", "", "list of excluded files separated by comma")
+	flag.StringVar(&extensions, "ex-extensions", "", "list of excluded extensions separated by comma")
+	flag.StringVar(&folders, "ex-folders", "", "list of excluded folders separated by comma")
+	flag.Parse()
 
+	excludedFiles := split(files, ",")
+	excludedExtensions := func() []string {
+		if extensions == "" {
+			return []string{}
+		}
+
+		res := strings.Split(extensions, ",")
+		for i := range res {
+			// String can't be empty
+			if res[i][0] != '.' {
+				res[i] = "." + res[i]
+			}
+		}
+
+		return res
+	}()
+	excludedFolders := split(folders, ",")
+
+	// Create channels
 	allPaths := make(chan string)
 	crlfFilesPaths := RunPool(5, allPaths)
 	done := make(chan struct{})
@@ -56,8 +70,8 @@ func main() {
 
 		// Check name
 		if contains(excludedFiles, info.Name()) {
-				return nil
-			}
+			return nil
+		}
 
 		// Check extension
 		if contains(excludedExtensions, filepath.Ext(info.Name())) {
@@ -253,3 +267,12 @@ func contains(array []string, elem string) bool {
 	return false
 }
 
+// split is wrapper around strings.Split
+// It returns empty []string, if s == ""
+func split(s string, sep string) []string {
+	if s == "" {
+		return []string{}
+	}
+
+	return strings.Split(s, sep)
+}

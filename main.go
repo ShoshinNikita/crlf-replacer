@@ -33,20 +33,10 @@ func main() {
 
 	// Printer function
 	go func() {
-		fmt.Print("Start\n\n")
+		fmt.Println("Start\n\nLog:")
 
-		c := 0
-		fmt.Print("Files with CRLF:")
 		for path := range crlfFilesPaths {
-			if c == 0 {
-				fmt.Print("\n")
-			}
-			fmt.Printf("* %s\n", path)
-			c++
-		}
-
-		if c == 0 {
-			fmt.Println(" Empty")
+			fmt.Println("*", path)
 		}
 
 		fmt.Println("\nDone")
@@ -92,6 +82,7 @@ func RunPool(number int, paths <-chan string) <-chan string {
 			wg.Add(1)
 			go runWorker(paths, results, wg)
 		}
+
 		wg.Wait()
 
 		close(results)

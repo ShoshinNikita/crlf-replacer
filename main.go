@@ -13,12 +13,14 @@ import (
 var shouldReplaceCRLF bool
 
 func main() {
-	excludeFolders := []string{
+	path := "."
+
+	excludedFiles := []string{}
+	excludedFolders := []string{
 		"node_modules",
 		".git",
 	}
-
-	excludeExtensions := []string{
+	excludedExtensions := []string{
 		".png",
 		".jpg",
 		".eot",
@@ -44,19 +46,35 @@ func main() {
 		close(done)
 	}()
 
-	filepath.Walk(".", filepath.WalkFunc(func(path string, info os.FileInfo, err error) error {
+	// Walk through files
+	filepath.Walk(path, filepath.WalkFunc(func(path string, info os.FileInfo, err error) error {
+		path = filepath.ToSlash(path)
+
 		if info.IsDir() {
 			return nil
 		}
-		for _, s := range excludeFolders {
-			if strings.Contains(path, s) {
+
+		// Check name
+		if contains(excludedFiles, info.Name()) {
 				return nil
 			}
+
+		// Check extension
+		if contains(excludedExtensions, filepath.Ext(info.Name())) {
+			return nil
 		}
 
-		ext := filepath.Ext(info.Name())
-		for _, s := range excludeExtensions {
-			if ext == s {
+		// Check folder
+		pathWithoutFile := func() string {
+			i := strings.LastIndex(path, "/")
+			if i == -1 {
+				// File is in current directory (./)
+				return ""
+			}
+			return path[0:i]
+		}()
+		for _, s := range excludedFolders {
+			if strings.Contains(pathWithoutFile, s) {
 				return nil
 			}
 		}
@@ -224,3 +242,14 @@ func wrapfError(err error, format string, args ...interface{}) error {
 	msg := fmt.Sprintf(format, args...)
 	return fmt.Errorf("%s: %s", msg, err)
 }
+
+func contains(array []string, elem string) bool {
+	for i := range array {
+		if array[i] == elem {
+			return true
+		}
+	}
+
+	return false
+}
+

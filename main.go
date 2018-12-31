@@ -10,6 +10,8 @@ import (
 	"sync"
 )
 
+var shouldReplaceCRLF bool
+
 func main() {
 	excludeFolders := []string{
 		"node_modules",
@@ -101,7 +103,17 @@ func RunPool(number int, paths <-chan string) <-chan string {
 func runWorker(paths <-chan string, results chan<- string, wg *sync.WaitGroup) {
 	for path := range paths {
 		if hasCRLF(path) {
-			results <- path
+			result := "File " + path + " has CRLF ending"
+			if shouldReplaceCRLF {
+				err := replaceCRLF(path)
+				if err != nil {
+					result = "[ERR] " + err.Error()
+				} else {
+					result = "File " + path + " was successfully modified"
+				}
+			}
+
+			results <- result
 		}
 	}
 
@@ -132,6 +144,68 @@ func hasCRLF(path string) bool {
 	return false
 }
 
+func replaceCRLF(path string) error {
+	tempPath := path + "-temp"
+	deletedPath := path + "-delete"
+
+	file, err := os.Open(path)
+	if err != nil {
+		return wrapfError(err, "can't open file %s", path)
+	}
+
+	tempFile, err := os.Create(tempPath)
+	if err != nil {
+		return wrapfError(err, "can't open temp file %s", tempPath)
+	}
+
+	scanner := bufio.NewScanner(file)
+	// Have to use custom split function to have \r and \n in result of scanner.Bytes()
+	scanner.Split(splitFunction)
+
+	for scanner.Scan() {
+		bytes := scanner.Bytes()
+
+		// CR == 13 (0x0D), LF == 10 (0x0A)
+		if len(bytes) > 2 && bytes[len(bytes)-2] == 0x0D && bytes[len(bytes)-1] == 0x0A {
+			// Trim last byte
+			bytes = bytes[:len(bytes)-1]
+			// Replace \r with \n
+			bytes[len(bytes)-1] = 0x0A
+		}
+
+		tempFile.Write(bytes)
+	}
+
+	file.Close()
+	tempFile.Close()
+
+	// Rename original file (we will be able to recover it)
+	err = os.Rename(path, deletedPath)
+	if err != nil {
+		return wrapfError(err, "can't rename original file %s", path)
+	}
+
+	// Rename temp file to original
+	err = os.Rename(tempPath, path)
+	if err != nil {
+		// Try to recover original file
+		newErr := os.Rename(deletedPath, path)
+		if err != nil {
+			return fmt.Errorf("can't rename temp file: %s. Can't recover original file %s: %s", err, path, newErr)
+		}
+
+		return fmt.Errorf("can't rename temp file: %s. Original file %s was recovered", err, path)
+	}
+
+	// Remove original file
+	err = os.Remove(deletedPath)
+	if err != nil {
+		return wrapfError(err, "file %s was successfully modified. Can't remove original file", path)
+	}
+
+	return nil
+}
+
 // Secondary functions
 
 // splitFunction saves \r and \n
@@ -149,4 +223,13 @@ func splitFunction(data []byte, atEOF bool) (advance int, token []byte, err erro
 	}
 	// Request more data.
 	return 0, nil, nil
+}
+
+func wrapfError(err error, format string, args ...interface{}) error {
+	if err == nil {
+		return nil
+	}
+
+	msg := fmt.Sprintf(format, args...)
+	return fmt.Errorf("%s: %s", msg, err)
 }

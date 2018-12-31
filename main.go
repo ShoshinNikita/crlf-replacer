@@ -43,8 +43,8 @@ func main() {
 	excludedFolders := split(folders, ",")
 
 	// Create channels
-	allPaths := make(chan string)
-	crlfFilesPaths := RunPool(5, allPaths)
+	allPaths := make(chan string, 10)
+	crlfFilesPaths := RunPool(10, allPaths)
 	done := make(chan struct{})
 
 	// Printer function

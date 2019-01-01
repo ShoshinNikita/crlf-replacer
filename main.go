@@ -11,9 +11,13 @@ import (
 	"sync"
 )
 
+const version = "v1.0"
+
 var shouldReplaceCRLF bool
 
 func main() {
+	fmt.Printf("CRLF-replacer %s - https://github.com/ShoshinNikita/crlf-replacer\n\n", version)
+
 	// Parse flags
 	var path, files, extensions, folders string
 

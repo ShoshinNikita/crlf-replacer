@@ -22,7 +22,7 @@ Program for replacing CRLF with LF
   |-- .gitignore
   |-- .git
     |-- ...
-  |-- npm_modules
+  |-- node_modules
     |-- empty_file.js
     |-- ...
     |-- 5k files in 2-3 lines
@@ -39,7 +39,7 @@ Program for replacing CRLF with LF
   |-- README.md
 ```
 
-* `./crlf-replacer -ex-files .gitignore,README.md,test.txt -ex-folders npm_modules,.git -replace`
+* `./crlf-replacer -ex-files .gitignore,README.md,test.txt -ex-folders node_modules,.git -replace`
 
   Command will **replace** CRLF with LF in files:
   * web.go
@@ -48,7 +48,7 @@ Program for replacing CRLF with LF
   * parser.go
   * main.go
 
-* `./crlf-replacer -ex-files .gitignore,README.md,test.txt -ex-folders npm_modules,.git`
+* `./crlf-replacer -ex-files .gitignore,README.md,test.txt -ex-folders node_modules,.git`
 
   Command will **print** next files:
   * web.go
@@ -57,7 +57,7 @@ Program for replacing CRLF with LF
   * parser.go
   * main.go
 
-* `./crlf -ex-extensions .go -ex-folders npm_modules,.git`
+* `./crlf -ex-extensions .go -ex-folders node_modules,.git`
 
   Command will **print** next files:
   * text.txt

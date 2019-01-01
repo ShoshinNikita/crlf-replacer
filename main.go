@@ -159,7 +159,7 @@ func hasCRLF(path string) bool {
 	for scanner.Scan() {
 		bytes := scanner.Bytes()
 		// CR == 13 (0x0D), LF == 10 (0x0A)
-		if len(bytes) > 2 && bytes[len(bytes)-2] == 0x0D && bytes[len(bytes)-1] == 0x0A {
+		if len(bytes) >= 2 && bytes[len(bytes)-2] == 0x0D && bytes[len(bytes)-1] == 0x0A {
 			return true
 		}
 	}
@@ -189,7 +189,7 @@ func replaceCRLF(path string) error {
 		bytes := scanner.Bytes()
 
 		// CR == 13 (0x0D), LF == 10 (0x0A)
-		if len(bytes) > 2 && bytes[len(bytes)-2] == 0x0D && bytes[len(bytes)-1] == 0x0A {
+		if len(bytes) >= 2 && bytes[len(bytes)-2] == 0x0D && bytes[len(bytes)-1] == 0x0A {
 			// Trim last byte
 			bytes = bytes[:len(bytes)-1]
 			// Replace \r with \n
